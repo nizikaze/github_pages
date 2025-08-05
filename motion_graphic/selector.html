@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motion Graphic Selector</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #selector {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="selector">
+        <button id="btn1">Pattern 1: Particle Field</button>
+        <button id="btn2">Pattern 2: Spiral Galaxy</button>
+        <button id="btn3">Pattern 3: Floating Crystals</button>
+        <button id="btn4">Pattern 4: Audio Visualizer</button>
+    </div>
+    <div id="container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="main.js"></script>
+    <script src="main2.js"></script>
+    <script src="main3.js"></script>
+    <script src="main4.js"></script>
+
+    <script>
+        const container = document.getElementById('container');
+        const buttons = {
+            btn1: startPattern1,
+            btn2: startPattern2,
+            btn3: startPattern3,
+            btn4: startPattern4,
+        };
+
+        let currentCleanup = null;
+
+        function switchPattern(patternFunction) {
+            if (currentCleanup) {
+                currentCleanup();
+            }
+            container.innerHTML = '';
+            currentCleanup = patternFunction(container);
+        }
+
+        document.getElementById('btn1').addEventListener('click', () => switchPattern(startPattern1));
+        document.getElementById('btn2').addEventListener('click', () => switchPattern(startPattern2));
+        document.getElementById('btn3').addEventListener('click', () => switchPattern(startPattern3));
+        document.getElementById('btn4').addEventListener('click', () => switchPattern(startPattern4));
+
+        // Start with pattern 1 by default
+        switchPattern(startPattern1);
+    </script>
+</body>
+</html>
