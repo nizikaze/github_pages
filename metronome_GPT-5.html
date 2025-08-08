@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>タップテンポ付きメトロノーム</title>
+  <meta name="description" content="GitHub Pagesでそのまま公開できる、タップテンポ対応のメトロノーム。" />
+  <style>
+    :root {
+      --bg: #0f172a; /* slate-900 */
+      --panel: #111827ee; /* gray-900 */
+      --text: #e5e7eb; /* gray-200 */
+      --sub: #94a3b8; /* slate-400 */
+      --accent: #22d3ee; /* cyan-400 */
+      --accent-2: #a78bfa; /* violet-400 */
+      --danger: #ef4444; /* red-500 */
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: radial-gradient(1200px 800px at 20% -10%, #1e293b, var(--bg)); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", "Noto Sans JP", sans-serif; }
+    a { color: var(--accent); text-decoration: none; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 24px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    h1 { font-size: clamp(22px, 4vw, 32px); margin: 0; letter-spacing: .02em; }
+    .card { background: var(--panel); border: 1px solid #1f2937; backdrop-filter: blur(6px); border-radius: 18px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .grid { display:grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .col-12 { grid-column: span 12; }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    @media (max-width: 720px) { .col-6, .col-4 { grid-column: span 12; } }
+
+    .bpm { display:flex; align-items:center; gap: 12px; justify-content:space-between; }
+    .bpm .value { font-size: clamp(42px, 9vw, 72px); font-weight: 800; line-height: 1; }
+    .controls { display:flex; gap: 10px; flex-wrap: wrap; }
+    button, input[type="number"], select {
+      background: #0b1220; color: var(--text); border: 1px solid #223048; border-radius: 12px; padding: 12px 14px; font-size: 16px; outline: 0; transition: transform .02s ease, background .2s;
+    }
+    button:hover { background:#0d1526; }
+    button:active { transform: translateY(1px) scale(.998); }
+    button.primary { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color:#001018; border: none; font-weight: 700; }
+    button.primary[aria-pressed="true"] { background: linear-gradient(90deg, #10b981, #34d399); color:#062015; }
+    .muted { color: var(--sub); font-size: 13px; }
+
+    .beat-visor { display:flex; gap: 10px; align-items:center; justify-content:center; padding: 16px 8px; }
+    .dot { width: 18px; height: 18px; border-radius: 99px; background: #1f2937; border: 1px solid #374151; box-shadow: inset 0 0 0 2px #0b1220; opacity: .5; transition: opacity .06s, transform .06s, background .06s; }
+    .dot.on { opacity: 1; background: var(--accent); transform: scale(1.15); }
+    .dot.accent { background: #f59e0b; }
+    .pulse { width: 160px; height: 160px; border-radius: 50%; margin: 8px auto 0; background: conic-gradient(from 0deg, var(--accent) 0% 10%, #0b1220 10% 100%); filter: blur(18px) saturate(140%); opacity: .22; animation: none; }
+    .pulsing { animation: pulse 600ms ease; }
+    @keyframes pulse { from { transform: scale(.98); opacity:.26;} to { transform: scale(1.02); opacity:.18;} }
+
+    .range { display:flex; align-items:center; gap:12px; }
+    input[type="range"]{ width: 100%; }
+    .footer { margin-top: 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    kbd { background:#111827; border:1px solid #374151; border-bottom-width:3px; padding:2px 6px; border-radius:6px; font-size:13px; color:#cbd5e1; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>タップテンポ付きメトロノーム</h1>
+      <div class="muted">スペース: タップ / Enter: 再生停止 / ↑↓: BPM調整</div>
+    </header>
+
+    <div class="grid" role="region" aria-label="metronome">
+      <section class="card col-12">
+        <div class="bpm">
+          <div>
+            <div class="muted">BPM</div>
+            <div id="bpmValue" class="value" aria-live="polite">120</div>
+          </div>
+          <div class="controls">
+            <button id="minus5" aria-label="BPMを5下げる">−5</button>
+            <button id="minus1" aria-label="BPMを1下げる">−1</button>
+            <input id="bpmInput" type="number" min="20" max="300" step="1" value="120" aria-label="BPM入力">
+            <button id="plus1" aria-label="BPMを1上げる">＋1</button>
+            <button id="plus5" aria-label="BPMを5上げる">＋5</button>
+            <button id="tap" class="" aria-label="タップしてテンポ検出">TAP</button>
+            <button id="startStop" class="primary" aria-pressed="false" aria-label="再生/停止">Start</button>
+          </div>
+        </div>
+        <div class="beat-visor" id="beatDots" aria-hidden="true"></div>
+        <div id="pulse" class="pulse" aria-hidden="true"></div>
+      </section>
+
+      <section class="card col-6">
+        <h2 style="margin-top:0">拍と細分化</h2>
+        <div class="controls">
+          <label class="muted">拍子（拍数）
+            <select id="beatsPerBar" aria-label="拍子の拍数">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4" selected>4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+          </label>
+          <label class="muted">細分化
+            <select id="subdivision" aria-label="細分化">
+              <option value="1" selected>1（四分）</option>
+              <option value="2">2（八分）</option>
+              <option value="3">3（三連）</option>
+              <option value="4">4（16分）</option>
+            </select>
+          </label>
+          <label class="muted">アクセント
+            <select id="accentMode" aria-label="アクセントモード">
+              <option value="bar" selected>小節頭のみ</option>
+              <option value="beat">各拍頭</option>
+              <option value="none">なし</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="card col-6">
+        <h2 style="margin-top:0">サウンド</h2>
+        <div class="range">
+          <label class="muted" for="volume">音量</label>
+          <input id="volume" type="range" min="0" max="1" step="0.01" value="0.7" />
+        </div>
+        <div class="controls" style="margin-top:10px">
+          <label class="muted">クリック音
+            <select id="soundType" aria-label="クリック音の種類">
+              <option value="sine" selected>ビープ（Sine）</option>
+              <option value="square">クリック（Square）</option>
+              <option value="noise">ノイズ</option>
+            </select>
+          </label>
+          <label class="muted">レイテンシ補正(ms)
+            <input id="latency" type="number" value="0" step="1" style="width:90px" aria-label="レイテンシ補正" />
+          </label>
+        </div>
+      </section>
+
+      <section class="card col-12">
+        <details>
+          <summary>使い方とショートカット</summary>
+          <ul>
+            <li><kbd>Space</kbd> … タップテンポ。約2～8回のタップから外れ値を除去して安定したBPMを推定。</li>
+            <li><kbd>Enter</kbd> … 再生/停止</li>
+            <li><kbd>↑/↓</kbd> … BPM ±1</li>
+            <li>拍・細分化・アクセントは再生中でも変更可能。</li>
+            <li>GitHub Pagesでindex.htmlを置くだけで動作します。</li>
+          </ul>
+        </details>
+      </section>
+    </div>
+
+    <div class="footer muted">
+      <div>© <span id="year"></span> Tap Metronome</div>
+      <div><a href="https://github.com/" rel="noopener" target="_blank" aria-label="GitHub">GitHub</a></div>
+    </div>
+  </div>
+
+  <script>
+    // --- State ---
+    const state = {
+      bpm: 120,
+      isRunning: false,
+      beatsPerBar: 4,
+      subdivision: 1,
+      accentMode: 'bar',
+      volume: 0.7,
+      soundType: 'sine',
+      latencyMs: 0,
+      // scheduler
+      audioCtx: null,
+      nextNoteTime: 0,
+      currentSubdivisionIndex: 0, // which sub-step in bar
+      scheduleAheadTime: 0.15, // seconds to schedule ahead
+      lookahead: 25, // ms scheduler tick
+      timerID: null,
+      // tap tempo
+      tapTimes: [],
+      lastTap: 0,
+    };
+
+    // --- Elements ---
+    const bpmValue = document.getElementById('bpmValue');
+    const bpmInput = document.getElementById('bpmInput');
+    const startStop = document.getElementById('startStop');
+    const tapBtn = document.getElementById('tap');
+    const minus5 = document.getElementById('minus5');
+    const minus1 = document.getElementById('minus1');
+    const plus1 = document.getElementById('plus1');
+    const plus5 = document.getElementById('plus5');
+
+    const beatsPerBarEl = document.getElementById('beatsPerBar');
+    const subdivisionEl = document.getElementById('subdivision');
+    const accentModeEl = document.getElementById('accentMode');
+
+    const volumeEl = document.getElementById('volume');
+    const soundTypeEl = document.getElementById('soundType');
+    const latencyEl = document.getElementById('latency');
+
+    const beatDots = document.getElementById('beatDots');
+    const pulse = document.getElementById('pulse');
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    function updateBpmDisplay(val) {
+      bpmValue.textContent = Math.round(val);
+      bpmInput.value = Math.round(val);
+      state.bpm = Math.min(300, Math.max(20, Number(val) || 120));
+    }
+
+    // --- Create dots for beats ---
+    function renderDots() {
+      const beats = Number(beatsPerBarEl.value);
+      beatDots.innerHTML = '';
+      for (let i = 0; i < beats; i++) {
+        const d = document.createElement('div');
+        d.className = 'dot' + (i === 0 ? ' accent' : '');
+        beatDots.appendChild(d);
+      }
+    }
+    renderDots();
+
+    function setRunningUI(running) {
+      startStop.setAttribute('aria-pressed', running ? 'true' : 'false');
+      startStop.textContent = running ? 'Stop' : 'Start';
+    }
+
+    // --- Web Audio helpers ---
+    function ensureAudio() {
+      if (!state.audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        state.audioCtx = new AC();
+      }
+      if (state.audioCtx.state === 'suspended') {
+        state.audioCtx.resume();
+      }
+      return state.audioCtx;
+    }
+
+    function playClick(time, isAccent) {
+      const ctx = ensureAudio();
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(state.volume, time);
+      gain.connect(ctx.destination);
+
+      const duration = 0.02; // short click
+
+      if (state.soundType === 'noise') {
+        const bufferSize = ctx.sampleRate * duration;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * (isAccent ? 1.0 : 0.6);
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.connect(gain);
+        src.start(time);
+        src.stop(time + duration);
+      } else {
+        const osc = ensureAudio().createOscillator();
+        osc.type = state.soundType;
+        osc.frequency.setValueAtTime(isAccent ? 1500 : 1000, time);
+        osc.connect(gain);
+        osc.start(time);
+        osc.stop(time + duration);
+      }
+
+      // quick decay
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + Math.max(0.03, duration * 2));
+    }
+
+    function nextStepTime() {
+      const spb = 60.0 / state.bpm; // seconds per beat
+      const step = spb / state.subdivision; // seconds per sub-step
+      return step;
+    }
+
+    function scheduler() {
+      const ctx = ensureAudio();
+      const latency = Math.max(-0.2, Math.min(0.2, state.latencyMs / 1000));
+      while (state.nextNoteTime < ctx.currentTime + state.scheduleAheadTime) {
+        const totalStepsPerBar = state.beatsPerBar * state.subdivision;
+        const stepInBar = state.currentSubdivisionIndex % totalStepsPerBar;
+        const isBeatHead = (stepInBar % state.subdivision) === 0;
+
+        let isAccent = false;
+        if (state.accentMode === 'bar') isAccent = stepInBar === 0;
+        else if (state.accentMode === 'beat') isAccent = isBeatHead;
+
+        playClick(state.nextNoteTime + latency, isAccent);
+        visualTick(stepInBar, totalStepsPerBar, isAccent);
+
+        // advance time
+        state.nextNoteTime += nextStepTime();
+        state.currentSubdivisionIndex++;
+      }
+    }
+
+    function visualTick(stepInBar, totalSteps, isAccent) {
+      const beatIndex = Math.floor(stepInBar / state.subdivision);
+      const dots = beatDots.children;
+      for (let i = 0; i < dots.length; i++) {
+        dots[i].classList.toggle('on', i === beatIndex);
+      }
+      // pulse
+      pulse.classList.remove('pulsing');
+      // restart animation
+      void pulse.offsetWidth;
+      pulse.classList.add('pulsing');
+    }
+
+    function start() {
+      ensureAudio();
+      state.isRunning = true;
+      setRunningUI(true);
+      state.currentSubdivisionIndex = 0;
+      state.nextNoteTime = state.audioCtx.currentTime + 0.06; // slight delay
+      state.timerID = setInterval(scheduler, state.lookahead);
+    }
+
+    function stop() {
+      state.isRunning = false;
+      setRunningUI(false);
+      clearInterval(state.timerID);
+      state.timerID = null;
+      // clear visual
+      for (const d of beatDots.children) d.classList.remove('on');
+    }
+
+    // --- Tap tempo ---
+    function registerTap() {
+      const now = performance.now();
+      if (!state.lastTap || now - state.lastTap > 1800) { // reset if gap too long (~33 BPM)
+        state.tapTimes = [];
+      }
+      if (state.lastTap) state.tapTimes.push(now - state.lastTap);
+      state.lastTap = now;
+
+      // keep last 8 intervals
+      if (state.tapTimes.length > 8) state.tapTimes.shift();
+
+      if (state.tapTimes.length >= 2) {
+        // Remove outliers via median absolute deviation
+        const arr = [...state.tapTimes];
+        const median = arr.slice().sort((a,b)=>a-b)[Math.floor(arr.length/2)];
+        const mad = arr.map(v=>Math.abs(v-median)).sort((a,b)=>a-b)[Math.floor(arr.length/2)] || 1;
+        const filtered = arr.filter(v => Math.abs(v - median) <= 2.5 * mad);
+        const avgMs = filtered.reduce((a,b)=>a+b,0) / filtered.length;
+        const bpm = 60000 / avgMs;
+        updateBpmDisplay(bpm);
+      }
+
+      // give a click for tactile feel
+      try { playClick(ensureAudio().currentTime + 0.001, true); } catch {}
+    }
+
+    // --- Wire up ---
+    bpmInput.addEventListener('input', e => updateBpmDisplay(e.target.value));
+    minus5.addEventListener('click', () => updateBpmDisplay(state.bpm - 5));
+    minus1.addEventListener('click', () => updateBpmDisplay(state.bpm - 1));
+    plus1.addEventListener('click', () => updateBpmDisplay(state.bpm + 1));
+    plus5.addEventListener('click', () => updateBpmDisplay(state.bpm + 5));
+
+    startStop.addEventListener('click', () => state.isRunning ? stop() : start());
+    tapBtn.addEventListener('click', registerTap);
+
+    beatsPerBarEl.addEventListener('change', () => { state.beatsPerBar = Number(beatsPerBarEl.value); renderDots(); });
+    subdivisionEl.addEventListener('change', () => { state.subdivision = Number(subdivisionEl.value); });
+    accentModeEl.addEventListener('change', () => { state.accentMode = accentModeEl.value; });
+
+    volumeEl.addEventListener('input', () => state.volume = Number(volumeEl.value));
+    soundTypeEl.addEventListener('change', () => state.soundType = soundTypeEl.value);
+    latencyEl.addEventListener('input', () => state.latencyMs = Number(latencyEl.value || 0));
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      if (e.code === 'Space') { e.preventDefault(); registerTap(); }
+      if (e.code === 'Enter') { e.preventDefault(); state.isRunning ? stop() : start(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); updateBpmDisplay(state.bpm + 1); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); updateBpmDisplay(state.bpm - 1); }
+    });
+
+    // Keep BPM display in sync initially
+    updateBpmDisplay(state.bpm);
+
+    // Handle page visibility to save CPU
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && state.isRunning) {
+        // keep audio running but pause scheduler to save a bit
+        clearInterval(state.timerID);
+        state.timerID = setInterval(scheduler, state.lookahead * 2);
+      } else if (!document.hidden && state.isRunning) {
+        clearInterval(state.timerID);
+        state.timerID = setInterval(scheduler, state.lookahead);
+      }
+    });
+
+  </script>
+</body>
+</html>
