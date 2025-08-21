@@ -1,0 +1,32 @@
+:root{
+  color-scheme: dark;
+  --bg:#0b0f14;
+  --panel:#121824cc;
+  --text:#dbe7ffcc;
+  --accent:#7aa2ff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;}
+body{
+  margin:0;
+  background: radial-gradient(1200px 700px at 70% 20%, #0f1724, var(--bg));
+  color:var(--text);
+  font: 14px/1.4 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  overflow:hidden;
+}
+canvas{ display:block; width:100vw; height:100vh; }
+.ui{
+  position:fixed; top:12px; left:12px; z-index:10;
+  background:var(--panel); backdrop-filter: blur(6px);
+  border:1px solid #ffffff14; border-radius:10px;
+  padding:8px 10px; display:flex; gap:8px; align-items:center;
+  box-shadow: 0 10px 30px #00000080;
+}
+.ui label{ display:flex; align-items:center; gap:6px; }
+select, button{
+  background:#0d1420; color:var(--text); border:1px solid #ffffff22;
+  border-radius:8px; padding:6px 10px; cursor:pointer;
+}
+button{ background:#0f1930; }
+.hint{ opacity:.7; font-size:12px; padding-left:6px; }
+
