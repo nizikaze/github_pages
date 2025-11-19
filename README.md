@@ -9,5 +9,3 @@ https://chord-gen-pi.vercel.app/
 
 ## タップテンポ
 https://nizikaze.github.io/github_pages/tap-tempo-bpm/index.html
-
-## おしゃれコード進行ジェネレータ(Vercel)
