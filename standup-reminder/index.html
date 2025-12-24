@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stand Up Reminder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Outfit:wght@300;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary: #818cf8;
+            --primary-glow: rgba(129, 140, 248, 0.5);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 90%;
+            max-width: 480px;
+            text-align: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Decorative Background Orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        .orb-1 {
+            width: 300px;
+            height: 300px;
+            background: #4f46e5;
+            top: -100px;
+            left: -100px;
+            animation: float 10s infinite alternate;
+        }
+
+        .orb-2 {
+            width: 200px;
+            height: 200px;
+            background: #ec4899;
+            bottom: -50px;
+            right: -50px;
+            animation: float 12s infinite alternate-reverse;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(30px, 50px);
+            }
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-sub);
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        /* Timer Circle */
+        .timer-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform-origin: 50% 50%;
+            stroke: var(--primary);
+            filter: drop-shadow(0 0 8px var(--primary-glow));
+        }
+
+        .timer-text {
+            position: absolute;
+            font-size: 3.5rem;
+            font-weight: 300;
+            color: #fff;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #0f172a;
+            border-color: transparent;
+        }
+
+        .btn-primary:hover {
+            background: #6366f1;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* Settings */
+        .settings {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .settings label {
+            display: block;
+            color: var(--text-sub);
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .time-input-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        input[type="number"] {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 0.5rem;
+            border-radius: 8px;
+            width: 80px;
+            font-family: inherit;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Notifications Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(16, 185, 129, 0.2);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #d1fae5;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 100;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="container">
+        <h1>スタンドアップ</h1>
+        <p class="subtitle">健康のために、定期的に立ち上がりましょう</p>
+
+        <div class="timer-container">
+            <svg class="progress-ring" width="280" height="280">
+                <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.05)" stroke-width="8"
+                    fill="transparent" r="120" cx="140" cy="140" />
+                <circle class="progress-ring__circle" stroke-width="8" stroke-linecap="round" fill="transparent" r="120"
+                    cx="140" cy="140" />
+            </svg>
+            <div class="timer-text" id="time-display">60:00</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="start-btn">
+                <span id="start-btn-icon">▶</span>
+                <span id="start-btn-text">スタート</span>
+            </button>
+            <button class="btn" id="reset-btn">
+                <span>↺</span>
+                <span>リセット</span>
+            </button>
+        </div>
+
+        <div class="settings">
+            <label>通知間隔 (分)</label>
+            <div class="time-input-group">
+                <input type="number" id="interval-input" value="60" min="1" max="180">
+                <button class="btn" id="apply-btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;">適用</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">設定を保存しました</div>
+
+    <script>
+        class StandUpTimer {
+            constructor() {
+                this.circle = document.querySelector('.progress-ring__circle');
+                this.radius = this.circle.r.baseVal.value;
+                this.circumference = this.radius * 2 * Math.PI;
+
+                this.timeDisplay = document.getElementById('time-display');
+                this.startBtn = document.getElementById('start-btn');
+                this.resetBtn = document.getElementById('reset-btn');
+                this.applyBtn = document.getElementById('apply-btn');
+                this.intervalInput = document.getElementById('interval-input');
+                this.toast = document.getElementById('toast');
+
+                this.intervalMinutes = 60;
+                this.timeLeft = this.intervalMinutes * 60;
+                this.isRunning = false;
+                this.isAlarming = false; // New state
+                this.timerId = null;
+                this.alarmIntervalId = null; // New state
+
+                // Initial Setup
+                this.circle.style.strokeDasharray = `${this.circumference} ${this.circumference}`;
+                this.circle.style.strokeDashoffset = 0;
+
+                this.loadSettings();
+                this.bindEvents();
+                this.updateDisplay(this.timeLeft);
+            }
+
+            loadSettings() {
+                const savedInterval = localStorage.getItem('standup_interval');
+                if (savedInterval) {
+                    this.intervalMinutes = parseInt(savedInterval);
+                    this.intervalInput.value = this.intervalMinutes;
+                    this.reset();
+                }
+
+                // Request notification permission early
+                if ("Notification" in window && Notification.permission !== "granted") {
+                    Notification.requestPermission();
+                }
+            }
+
+            bindEvents() {
+                this.startBtn.addEventListener('click', () => this.toggleTimer());
+                this.resetBtn.addEventListener('click', () => this.reset());
+                this.applyBtn.addEventListener('click', () => this.applySettings());
+            }
+
+            toggleTimer() {
+                if (this.isAlarming) {
+                    this.stopAlarm();
+                    this.reset();
+                } else if (this.isRunning) {
+                    this.pause();
+                } else {
+                    this.start();
+                }
+            }
+
+            start() {
+                if (this.timeLeft === 0 || this.isAlarming) return; // Don't start if finished
+
+                this.isRunning = true;
+                this.updateButtonState();
+
+                this.timerId = setInterval(() => {
+                    this.timeLeft--;
+                    this.updateDisplay(this.timeLeft);
+                    this.setProgress(this.timeLeft / (this.intervalMinutes * 60));
+
+                    if (this.timeLeft <= 0) {
+                        this.complete();
+                    }
+                }, 1000);
+            }
+
+            pause() {
+                this.isRunning = false;
+                this.updateButtonState();
+                clearInterval(this.timerId);
+            }
+
+            reset() {
+                this.stopAlarm();
+                this.pause();
+                this.timeLeft = this.intervalMinutes * 60;
+                this.updateDisplay(this.timeLeft);
+                this.setProgress(1);
+                this.circle.style.stroke = '';
+            }
+
+            complete() {
+                this.pause();
+                this.timeLeft = 0;
+                this.updateDisplay(0);
+                this.startAlarmLoop();
+            }
+
+            startAlarmLoop() {
+                this.isAlarming = true;
+                this.updateButtonState();
+                this.showNotification();
+
+                // Visual completion effect
+                this.circle.style.stroke = '#10b981'; // Green
+
+                // First beep immediately
+                this.playBeep();
+
+                // Loop beep every 1.5 seconds
+                this.alarmIntervalId = setInterval(() => {
+                    this.playBeep();
+                }, 1500);
+            }
+
+            stopAlarm() {
+                this.isAlarming = false;
+                clearInterval(this.alarmIntervalId);
+                this.circle.style.stroke = '';
+                this.updateButtonState();
+            }
+
+            updateDisplay(seconds) {
+                const m = Math.floor(seconds / 60);
+                const s = seconds % 60;
+                this.timeDisplay.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+                document.title = this.isAlarming ? '🔔 時間です！ - スタンドアップ' :
+                    this.isRunning ? `(${m}:${s < 10 ? '0' : ''}${s}) スタンドアップ` : 'スタンドアップ通知';
+            }
+
+            setProgress(percent) {
+                const offset = this.circumference - percent * this.circumference;
+                this.circle.style.strokeDashoffset = offset;
+            }
+
+            updateButtonState() {
+                const icon = document.getElementById('start-btn-icon');
+                const text = document.getElementById('start-btn-text');
+
+                this.startBtn.classList.remove('btn-primary', 'btn-danger');
+                this.startBtn.style.background = '';
+                this.startBtn.style.borderColor = '';
+
+                if (this.isAlarming) {
+                    icon.textContent = '⏹';
+                    text.textContent = 'アラーム停止';
+                    this.startBtn.classList.add('btn-primary');
+                    this.startBtn.style.background = '#ef4444'; // Red for stop
+                    this.startBtn.style.borderColor = '#ef4444';
+                } else if (this.isRunning) {
+                    icon.textContent = '⏸';
+                    text.textContent = '一時停止';
+                } else {
+                    icon.textContent = '▶';
+                    text.textContent = 'スタート';
+                    this.startBtn.classList.add('btn-primary');
+                }
+            }
+
+            applySettings() {
+                const newVal = parseInt(this.intervalInput.value);
+                if (newVal > 0) {
+                    this.intervalMinutes = newVal;
+                    localStorage.setItem('standup_interval', newVal);
+                    this.reset();
+                    this.showToast('設定を保存しました');
+                }
+            }
+
+            showToast(msg) {
+                this.toast.textContent = msg;
+                this.toast.classList.add('show');
+                setTimeout(() => this.toast.classList.remove('show'), 3000);
+            }
+
+            showNotification() {
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("時間です！", {
+                        body: "立ち上がって背伸びをしましょう。",
+                        icon: "https://cdn-icons-png.flaticon.com/512/2659/2659980.png"
+                    });
+                }
+            }
+
+            playBeep() {
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                if (context.state === 'suspended') context.resume();
+
+                const osc = context.createOscillator();
+                const gain = context.createGain();
+
+                osc.connect(gain);
+                gain.connect(context.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, context.currentTime); // A5
+                osc.frequency.exponentialRampToValueAtTime(110, context.currentTime + 0.5);
+
+                gain.gain.setValueAtTime(0.1, context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
+
+                osc.start(context.currentTime);
+                osc.stop(context.currentTime + 0.5);
+
+                // Second beep
+                setTimeout(() => {
+                    const osc2 = context.createOscillator();
+                    const gain2 = context.createGain();
+                    osc2.connect(gain2);
+                    gain2.connect(context.destination);
+
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(880, context.currentTime);
+                    gain2.gain.setValueAtTime(0.1, context.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
+
+                    osc2.start(context.currentTime);
+                    osc2.stop(context.currentTime + 0.5);
+                }, 200);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            new StandUpTimer();
+        });
+    </script>
+</body>
+
+</html>
